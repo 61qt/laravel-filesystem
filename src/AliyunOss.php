@@ -90,6 +90,16 @@ class AliyunOss implements Cloud
     }
 
     /**
+     * Set Aliyun Oss bucket.
+     *
+     * @return string
+     */
+    public function setBucket(string $bucket)
+    {
+        return $this->bucket = $bucket;
+    }
+
+    /**
      * Get the Aliyun Oss bucket.
      *
      * @return string
