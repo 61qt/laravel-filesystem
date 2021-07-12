@@ -1,4 +1,7 @@
 {
+    "name": "61qt/laravel-filesystem",
+    "description": "Laravel filesystem",
+    "type": "library",
     "require": {
         "illuminate/filesystem": "^8.49"
     },
@@ -9,5 +12,11 @@
     },
     "suggest": {
         "aliyuncs/oss-sdk-php": "Required to use the Aliyun oss driver (^2.4)."
-    }
+    },
+    "authors": [
+        {
+            "name": "xurh",
+            "email": "xurhwork@gmail.com"
+        }
+    ]
 }
