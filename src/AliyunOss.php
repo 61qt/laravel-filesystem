@@ -2,11 +2,13 @@
 
 namespace QT\Filesystem;
 
+use SplFileInfo;
 use OSS\OssClient;
 use OSS\Core\OssException;
 use InvalidArgumentException;
 use Illuminate\Contracts\Filesystem\Cloud;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Contracts\Filesystem\FileExistsException;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 
 class AliyunOss implements Cloud
@@ -119,8 +121,8 @@ class AliyunOss implements Cloud
     {
         try {
             return $this->getClient()->signUrl(
-                $this->bucket, 
-                $path, 
+                $this->bucket,
+                $path,
                 $this->config['access_timeout']
             );
         } catch (OssException $e) {
@@ -160,7 +162,7 @@ class AliyunOss implements Cloud
         try {
             return $this->getClient()->getObject($this->bucket, $path);
         } catch (OssException $e) {
-            throw new FileNotFoundException($e->getMessage(), 0, $e);
+            throw new FileNotFoundException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -185,7 +187,7 @@ class AliyunOss implements Cloud
 
             return $stream;
         } catch (OssException $e) {
-            throw new FileNotFoundException($e->getMessage(), 0, $e);
+            throw new FileNotFoundException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -211,6 +213,44 @@ class AliyunOss implements Cloud
     }
 
     /**
+     * Store the uploaded file on the disk.
+     *
+     * @param  string  $path
+     * @param  \Illuminate\Http\File|\Illuminate\Http\UploadedFile|string  $file
+     * @param  mixed  $options
+     * @return string|false
+     */
+    public function putFile($path, $file, $options = [])
+    {
+        $file = is_string($file) ? new SplFileInfo($file) : $file;
+        $name = md5($file->getFilename().time()).".{$file->getExtension()}";
+
+        return $this->putFileAs($path, $file->getRealPath(), $name, $options);
+    }
+
+    /**
+     * Store the uploaded file on the disk with a given name.
+     *
+     * @param  string  $path
+     * @param  \Illuminate\Http\File|\Illuminate\Http\UploadedFile|string  $file
+     * @param  string  $name
+     * @param  mixed  $options
+     * @return string|false
+     */
+    public function putFileAs($path, $file, $name, $options = [])
+    {
+        $path   = trim($path . '/' . $name, '/');
+        $stream = fopen($file, 'r');
+        $result = $this->getClient()->uploadStream($this->bucket, $path, $stream, $options);
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        return !empty($result['info']['url']) ? $result['info']['url'] : false;
+    }
+
+    /**
      * Write a new file using a stream.
      *
      * @param  string  $path
@@ -232,9 +272,7 @@ class AliyunOss implements Cloud
 
             return true;
         } catch (OssException $e) {
-            $this->errors[] = $e;
-
-            return false;
+            throw new FileExistsException($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -270,12 +308,12 @@ class AliyunOss implements Cloud
      */
     public function setVisibility($path, $visibility)
     {
-        if ($visibility === Filesystem::VISIBILITY_PUBLIC) {
-            $visibility = self::VISIBILITY_PUBLIC_READ_WRITE;
-        }
-
         try {
-            $this->getClient()->putObjectAcl($this->bucket, $path, $visibility);
+            $this->getClient()->putObjectAcl(
+                $this->bucket,
+                $path,
+                $this->parseVisibility($visibility)
+            );
 
             return true;
         } catch (OssException $e) {
@@ -600,6 +638,29 @@ class AliyunOss implements Cloud
             OssClient::OSS_MARKER   => $marker,
             OssClient::OSS_MAX_KEYS => $this->config[OssClient::OSS_MAX_KEYS],
         ]);
+    }
+
+    /**
+     * Parse the given visibility value.
+     *
+     * @param  string|null  $visibility
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function parseVisibility($visibility)
+    {
+        switch ($visibility) {
+            case AliyunOss::VISIBILITY_DEFAULT:
+            case AliyunOss::VISIBILITY_PUBLIC_READ:
+                return $visibility;
+            case Filesystem::VISIBILITY_PUBLIC:
+                return AliyunOss::VISIBILITY_PUBLIC_READ_WRITE;
+            case Filesystem::VISIBILITY_PRIVATE:
+                return AliyunOss::VISIBILITY_PRIVATE;
+        }
+
+        throw new InvalidArgumentException("Unknown visibility: {$visibility}.");
     }
 
     /**
