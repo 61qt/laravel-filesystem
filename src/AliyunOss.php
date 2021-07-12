@@ -223,7 +223,11 @@ class AliyunOss implements Cloud
     public function putFile($path, $file, $options = [])
     {
         $file = is_string($file) ? new SplFileInfo($file) : $file;
-        $name = md5($file->getFilename().time()).".{$file->getExtension()}";
+        $name = md5($file->getFilename().time());
+
+        if ($file->getExtension() !== '') {
+            $name = "{$name}.{$file->getExtension()}";
+        }
 
         return $this->putFileAs($path, $file->getRealPath(), $name, $options);
     }
