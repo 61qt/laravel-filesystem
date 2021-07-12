@@ -1,0 +1,13 @@
+{
+    "require": {
+        "illuminate/filesystem": "^8.49"
+    },
+    "autoload": {
+        "psr-4": {
+            "QT\\Filesystem\\": "src/"
+        }
+    },
+    "suggest": {
+        "aliyuncs/oss-sdk-php": "Required to use the Aliyun oss driver (^2.4)."
+    }
+}
