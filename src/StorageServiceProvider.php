@@ -14,8 +14,8 @@ class StorageServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->app['filesystem']->extend('aliyun', function ($config) {
-            return $this->app->make(AliyunOss::class, ['config' => $config]);
+        $this->app['filesystem']->extend('aliyun', function ($app, $config) {
+            return $app->make(AliyunOss::class, $config);
         });
     }
 
