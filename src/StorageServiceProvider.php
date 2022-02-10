@@ -53,7 +53,7 @@ class StorageServiceProvider extends ServiceProvider
                 $config['access_key_secret'],
                 $config['end_point']
             );
-    
+
             return new AliyunOss($client, $config['bucket'], $config);
         });
     }

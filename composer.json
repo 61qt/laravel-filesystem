@@ -3,7 +3,7 @@
     "description": "Laravel filesystem",
     "type": "library",
     "require": {
-        "illuminate/filesystem": "^8.49"
+        "illuminate/filesystem": "^8.49 || ^9.0"
     },
     "autoload": {
         "psr-4": {
